@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "name": "certificate-generator",
+  "builds": [
+    {
+      "src": "tools/coordinateServer.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/health",
+      "dest": "tools/coordinateServer.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "tools/coordinateServer.js"
+    },
+    {
+      "src": "/tools/(.*)",
+      "dest": "tools/coordinateServer.js"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "tools/coordinateServer.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "tools/coordinateServer.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "HOST": "0.0.0.0"
+  },
+  "functions": {
+    "tools/coordinateServer.js": {
+      "maxDuration": 60
+    }
+  },
+  "regions": ["iad1"]
+}

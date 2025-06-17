@@ -1,0 +1,90 @@
+{
+  "template": {
+    "pdfPath": "./assets/templates/ttt_tnv.pdf",
+    "outputDirectory": "./output/participants"
+  },
+  "fonts": {
+    "primary": {
+      "path": "./assets/fonts/MonteCarlo/MonteCarlo-Regular.ttf",
+      "size": 50,
+      "minSize": 20,
+      "color": {
+        "r": 0.13,
+        "g": 0.18,
+        "b": 0.4
+      }
+    },
+    "secondary": {
+      "path": "./assets/fonts/Quicksand/static/Quicksand-Bold.ttf",
+      "size": 25,
+      "minSize": 10,
+      "color": {
+        "r": 0.13,
+        "g": 0.18,
+        "b": 0.4
+      }
+    },
+    "sizeRatio": 1.5
+  },
+  "textFields": {
+    "name": {
+      "formatting": {
+        "preserveAcronyms": true,
+        "wordSpacing": "   ",
+        "capitalizeWords": false
+      },
+      "fontType": "primary",
+      "offset": 0,
+      "additionalVerticalLift": 0,
+      "coordinates": {
+        "lineStartX": 339.63641357421875,
+        "lineEndX": 708.6364135742188,
+        "yFromTop": 292.98863983154297,
+        "coordinateSystem": "line"
+      }
+    },
+    "position": {
+      "formatting": {
+        "preserveAcronyms": true,
+        "wordSpacing": " ",
+        "capitalizeWords": true
+      },
+      "fontType": "secondary",
+      "offset": 0,
+      "additionalVerticalLift": 0,
+      "coordinates": {
+        "lineStartX": 408.63641357421875,
+        "lineEndX": 651.6364135742188,
+        "yFromTop": 327.98863983154297,
+        "coordinateSystem": "line"
+      }
+    }
+  },
+  "coordinateHelp": {
+    "instructions": "These coordinates were set using lineCoordinatePicker.html",
+    "coordinateSystem": "line means you set start and end points of lines"
+  },
+  "csvMapping": {
+    "nameColumn": 0,
+    "positionColumn": 1,
+    "skipFirstRow": true,
+    "encoding": "utf8",
+    "delimiter": ","
+  },
+  "fileSettings": {
+    "encoding": "utf8",
+    "filenameSeparator": "-",
+    "invalidCharsRegex": "[/\\\\?%*:|\"<>]",
+    "replacementChar": "-"
+  },
+  "processing": {
+    "showWarnings": true,
+    "showProgress": true,
+    "validateInput": true,
+    "createOutputDir": true
+  },
+  "execution": {
+    "mode": "csv",
+    "csvFilePath": "./assets/sample-data/ttt_tnv.csv"
+  }
+}
