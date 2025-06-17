@@ -11,7 +11,6 @@ export class ConfigManager {
     this.configPath = configPath;
     this.config = this.loadConfig();
   }
-
   /**
    * Load and validate configuration from file
    * @returns {Object} Configuration object
@@ -20,11 +19,71 @@ export class ConfigManager {
     try {
       const configData = fs.readFileSync(this.configPath, 'utf-8');
       const config = JSON.parse(configData);
+      
+      // Override paths for Vercel environment
+      this.applyVercelOverrides(config);
+      
       this.validateConfig(config);
       return config;
     } catch (error) {
       console.error(`Error loading config from ${this.configPath}:`, error.message);
       throw new Error(`Failed to load configuration: ${error.message}`);
+    }
+  }  /**
+   * Apply Vercel-specific path overrides
+   * @param {Object} config - Configuration object to modify
+   */
+  applyVercelOverrides(config) {
+    const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
+    
+    if (isVercel) {
+      console.log('🔧 Applying Vercel overrides...');
+      console.log('🔍 Original output directory:', config.template?.outputDirectory);
+      console.log('🔍 Original template path:', config.template?.pdfPath);
+      
+      // Override output directory to use writable /tmp in Vercel
+      if (config.template && config.template.outputDirectory) {
+        config.template.outputDirectory = '/tmp/output/participants';
+        console.log('🔧 Vercel detected: Using /tmp/output/participants for certificate output');
+      }
+      
+      // Convert relative paths to absolute paths in Vercel
+      if (config.template && config.template.pdfPath && config.template.pdfPath.startsWith('./')) {
+        config.template.pdfPath = config.template.pdfPath.replace('./', '/var/task/');
+        console.log('🔧 Vercel detected: Updated template path to:', config.template.pdfPath);
+      }
+      
+      // Convert font paths
+      if (config.fonts) {
+        if (config.fonts.primary && config.fonts.primary.path && config.fonts.primary.path.startsWith('./')) {
+          config.fonts.primary.path = config.fonts.primary.path.replace('./', '/var/task/');
+          console.log('🔧 Vercel detected: Updated primary font path to:', config.fonts.primary.path);
+        }
+        if (config.fonts.secondary && config.fonts.secondary.path && config.fonts.secondary.path.startsWith('./')) {
+          config.fonts.secondary.path = config.fonts.secondary.path.replace('./', '/var/task/');
+          console.log('🔧 Vercel detected: Updated secondary font path to:', config.fonts.secondary.path);
+        }
+      }
+      
+      // Also ensure we have a template object if it doesn't exist
+      if (!config.template) {
+        config.template = {};
+      }
+      if (!config.template.outputDirectory) {
+        config.template.outputDirectory = '/tmp/output/participants';
+        console.log('🔧 Vercel detected: Created output directory setting /tmp/output/participants');
+      }
+      
+      console.log('🔍 Final output directory:', config.template.outputDirectory);
+      console.log('🔍 Final template path:', config.template.pdfPath);
+      
+      // Ensure the output directory exists
+      try {
+        fs.mkdirSync('/tmp/output/participants', { recursive: true });
+        console.log('✅ Created /tmp/output/participants directory');
+      } catch (error) {
+        console.warn('Could not create output directory:', error.message);
+      }
     }
   }
 

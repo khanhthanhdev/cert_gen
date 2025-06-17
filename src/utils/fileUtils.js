@@ -20,8 +20,14 @@ export function fileExists(filePath) {
  * @param {string} dirPath - Directory path
  */
 export function ensureDirectoryExists(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
+  try {
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+  } catch (error) {
+    // In Vercel serverless environment, directory creation might fail
+    // but directories will be created automatically when files are written
+    console.warn(`Could not create directory ${dirPath}:`, error.message);
   }
 }
 

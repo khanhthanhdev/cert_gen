@@ -1099,7 +1099,7 @@
       async function loadConfiguration() {
         try {
           showStatus("Loading configuration...", "info");
-          const response = await fetch("http://localhost:3000/api/config");
+          const response = await fetch("/api/config");
           if (response.ok) {
             currentConfig = await response.json();
             renderFieldList();
@@ -1266,12 +1266,11 @@
           // If editing and name changed, remove old field
           if (editingField && editingField !== fieldName) {
             delete currentConfig.textFields[editingField];
-          }
-          currentConfig.textFields[fieldName] = fieldConfig;
+          }          currentConfig.textFields[fieldName] = fieldConfig;
 
           // Save to server
           const response = await fetch(
-            "http://localhost:3000/api/save-config",
+            "/api/save-config",
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -1292,13 +1291,12 @@
 
       async function deleteField(fieldName) {
         if (
-          confirm(`Are you sure you want to delete the "${fieldName}" field?`)
-        ) {
+          confirm(`Are you sure you want to delete the "${fieldName}" field?`)        ) {
           try {
             delete currentConfig.textFields[fieldName];
 
             const response = await fetch(
-              "http://localhost:3000/api/save-config",
+              "/api/save-config",
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1881,7 +1879,7 @@
           verticalLift;
         try {
           const response = await fetch(
-            "http://localhost:3000/api/save-config",
+            "/api/save-config",
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -1912,7 +1910,7 @@
           return;
         }
         try {
-          const response = await fetch("http://localhost:3000/api/test-lines", {
+          const response = await fetch("/api/test-lines", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -1935,7 +1933,7 @@
       }
       function openCoordinatePicker(fieldName) {
         // Open the line coordinate picker in a new window/tab
-        const url = `http://localhost:3000/picker?field=${encodeURIComponent(
+        const url = `/picker?field=${encodeURIComponent(
           fieldName
         )}`;
         window.open(
@@ -1999,7 +1997,7 @@
       async function generateTestCertificates() {
         // Implement test generation
         const response = await fetch(
-          "http://localhost:3000/api/generate-test",
+          "/api/generate-test",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -2041,7 +2039,7 @@
         progressFill.style.width = "50%";
 
         const response = await fetch(
-          "http://localhost:3000/api/generate-from-csv",
+          "/api/generate-from-csv",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -2081,7 +2079,7 @@
         showStatus("Preparing ZIP download...", "info");
         
         // Create a temporary link to trigger download
-        const downloadUrl = 'http://localhost:3000/api/download-all';
+        const downloadUrl = '/api/download-all';
         const link = document.createElement('a');
         link.href = downloadUrl;
         link.download = 'certificates.zip';
@@ -2096,7 +2094,7 @@
       }
 
       function downloadSingleFile(fileName) {
-        const downloadUrl = `http://localhost:3000/api/download/${encodeURIComponent(fileName)}`;
+        const downloadUrl = `/api/download/${encodeURIComponent(fileName)}`;
         const link = document.createElement('a');
         link.href = downloadUrl;
         link.download = fileName;
@@ -2109,7 +2107,7 @@
       // Enhanced file statistics
       async function loadFileStatistics() {
         try {
-          const response = await fetch('http://localhost:3000/api/files/stats');
+          const response = await fetch('/api/files/stats');
           if (response.ok) {
             const stats = await response.json();
             updateStatisticsDisplay(stats);
@@ -2221,7 +2219,7 @@
       // Utility functions
       async function validateConfig() {
         try {
-          const response = await fetch("http://localhost:3000/api/validate");
+          const response = await fetch("/api/validate");
           const result = await response.json();
           showStatus(result.message, result.valid ? "success" : "error");
         } catch (error) {
@@ -2340,7 +2338,7 @@
 
       function previewPdf(fileName) {
         const pdfViewer = document.getElementById("pdfViewerPreview");
-        const previewUrl = `http://localhost:3000/api/preview/${encodeURIComponent(fileName)}`;
+        const previewUrl = `/api/preview/${encodeURIComponent(fileName)}`;
         
         pdfViewer.innerHTML = `
           <iframe src="${previewUrl}" width="100%" height="100%">

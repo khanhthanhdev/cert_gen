@@ -698,7 +698,7 @@
           // Try to save to server first
           try {
             const response = await fetch(
-              "http://localhost:3000/api/save-config",
+              "/api/save-config",
               {
                 method: "POST",
                 headers: {
@@ -838,7 +838,7 @@ npm run coordinate-picker</pre>
         try {
           const config = generateConfig();
 
-          const response = await fetch("http://localhost:3000/api/test-lines", {
+          const response = await fetch("/api/test-lines", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

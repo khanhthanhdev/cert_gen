@@ -14,131 +14,98 @@ const __dirname = dirname(__filename);
 
 export class WorkerService {
   constructor() {
-    this.outputDir = path.join(__dirname, '../output/participants');
-    this.tempDir = path.join(__dirname, '../temp');
-    this.ensureDirectories();
+    // Use /tmp for Vercel serverless functions (writable directory)
+    // or fallback to local paths for development
+    const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
+    
+    if (isVercel) {
+      this.outputDir = '/tmp/output/participants';
+      this.tempDir = '/tmp';
+    } else {
+      this.outputDir = path.join(__dirname, '../output/participants');
+      this.tempDir = path.join(__dirname, '../temp');
+    }
+
+    // Ensure directories exist
+    this.ensureDirectoriesExist();
   }
 
   /**
    * Ensure required directories exist
    */
-  ensureDirectories() {
-    if (!fs.existsSync(this.outputDir)) {
-      fs.mkdirSync(this.outputDir, { recursive: true });
-    }
-    if (!fs.existsSync(this.tempDir)) {
-      fs.mkdirSync(this.tempDir, { recursive: true });
-    }
-  }
-  /**
-   * Get sanitized filename for HTTP headers
-   * @param {string} filename - Original filename
-   * @returns {string} Sanitized filename
-   */
-  sanitizeFilename(filename) {
-    // Remove non-ASCII characters and replace with underscores
-    return filename.replace(/[^\x20-\x7E]/g, '_').replace(/"/g, '\\"');
-  }
-
-  /**
-   * Get safe filename for ZIP archives (preserves UTF-8)
-   * @param {string} filename - Original filename
-   * @returns {string} Safe filename for ZIP
-   */
-  getSafeZipFilename(filename) {
-    // Only replace characters that are problematic for file systems
-    // Keep UTF-8 characters but replace file system reserved characters
-    return filename.replace(/[<>:"/\\|?*]/g, '-').replace(/\s+/g, ' ').trim();
-  }
-
-  /**
-   * Handle PDF preview request
-   * @param {string} fileName - PDF filename
-   * @param {Object} res - Express response object
-   */
-  async handlePreview(fileName, res) {
+  ensureDirectoriesExist() {
     try {
-      const filePath = path.join(this.outputDir, fileName);
-      
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'File not found' });
+      if (!fs.existsSync(this.outputDir)) {
+        fs.mkdirSync(this.outputDir, { recursive: true });
+        console.log(`📁 Created output directory: ${this.outputDir}`);
       }
-
-      // Check if file is actually a PDF
-      const fileExtension = path.extname(fileName).toLowerCase();
-      if (fileExtension !== '.pdf') {
-        return res.status(400).json({ error: 'File is not a PDF' });
+      if (!fs.existsSync(this.tempDir)) {
+        fs.mkdirSync(this.tempDir, { recursive: true });
+        console.log(`📁 Created temp directory: ${this.tempDir}`);
       }
-
-      // Sanitize filename for HTTP header
-      const sanitizedFileName = this.sanitizeFilename(fileName);
-      
-      // Set headers for PDF display
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${sanitizedFileName}"`);
-      res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
-      
-      // Stream the PDF file
-      const fileStream = fs.createReadStream(filePath);
-      
-      fileStream.on('error', (error) => {
-        console.error('Error streaming PDF:', error);
-        if (!res.headersSent) {
-          res.status(500).json({ error: 'Error reading PDF file' });
-        }
-      });
-
-      fileStream.pipe(res);
-      
     } catch (error) {
-      console.error('Error in handlePreview:', error);
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'Failed to serve PDF: ' + error.message });
-      }
+      console.warn('Warning: Could not create directories:', error.message);
     }
   }
 
   /**
-   * Handle single file download
-   * @param {string} fileName - PDF filename
+   * Handle file preview request
+   * @param {string} fileName - Name of file to preview
    * @param {Object} res - Express response object
    */
-  async handleDownload(fileName, res) {
+  handlePreview(fileName, res) {
     try {
-      const filePath = path.join(this.outputDir, fileName);
+      const safeName = path.basename(fileName); // Prevent path traversal
+      const filePath = path.join(this.outputDir, safeName);
       
       if (!fs.existsSync(filePath)) {
         return res.status(404).json({ error: 'File not found' });
       }
 
-      // Sanitize filename for download
-      const sanitizedFileName = this.sanitizeFilename(fileName);
-      
-      // Set headers for download
+      // Set headers for PDF preview
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${sanitizedFileName}"`);
-      res.setHeader('Content-Length', fs.statSync(filePath).size);
+      res.setHeader('Content-Disposition', 'inline');
       
       // Stream the file
       const fileStream = fs.createReadStream(filePath);
-      
-      fileStream.on('error', (error) => {
-        console.error('Error streaming download:', error);
-        if (!res.headersSent) {
-          res.status(500).json({ error: 'Error reading file' });
-        }
-      });
-
       fileStream.pipe(res);
       
     } catch (error) {
-      console.error('Error in handleDownload:', error);
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'Failed to download file: ' + error.message });
-      }
+      console.error('Error in preview:', error);
+      res.status(500).json({ error: 'Failed to preview file: ' + error.message });
     }
-  }  /**
-   * Create ZIP archive of all PDF files with better UTF-8 support
+  }
+
+  /**
+   * Handle file download request
+   * @param {string} fileName - Name of file to download
+   * @param {Object} res - Express response object
+   */
+  handleDownload(fileName, res) {
+    try {
+      const safeName = path.basename(fileName); // Prevent path traversal
+      const filePath = path.join(this.outputDir, safeName);
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+
+      // Set headers for download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
+      
+      // Stream the file
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+      
+    } catch (error) {
+      console.error('Error in download:', error);
+      res.status(500).json({ error: 'Failed to download file: ' + error.message });
+    }
+  }
+
+  /**
+   * Create ZIP archive with improved error handling and logging
    * @returns {Promise<string>} Path to created ZIP file
    */
   async createZipArchive() {
@@ -158,6 +125,10 @@ export class WorkerService {
         const zipFileName = `certificates_${timestamp}.zip`;
         const zipPath = path.join(this.tempDir, zipFileName);
 
+        console.log(`🗜️ Creating ZIP archive: ${zipFileName}`);
+        console.log(`📁 Output directory: ${this.outputDir}`);
+        console.log(`📦 ZIP path: ${zipPath}`);
+
         // Create write stream for ZIP file
         const output = fs.createWriteStream(zipPath);
         
@@ -170,39 +141,53 @@ export class WorkerService {
 
         // Handle archive errors
         archive.on('error', (err) => {
-          console.error('Archive error:', err);
-          reject(err);
+          console.error('❌ Archive error:', err);
+          reject(new Error(`Archive creation failed: ${err.message}`));
         });
 
         // Handle warnings (non-blocking)
         archive.on('warning', (err) => {
           if (err.code === 'ENOENT') {
-            console.warn('Archive warning:', err);
+            console.warn('⚠️ Archive warning (file not found):', err.message);
           } else {
-            console.error('Archive error:', err);
-            reject(err);
+            console.error('❌ Archive warning (critical):', err);
+            reject(new Error(`Archive warning: ${err.message}`));
           }
         });
 
         // Handle output stream errors
         output.on('error', (err) => {
-          console.error('Output stream error:', err);
-          reject(err);
+          console.error('❌ Output stream error:', err);
+          reject(new Error(`Output stream error: ${err.message}`));
         });
 
         // Resolve when archive is finalized
         output.on('close', () => {
           const sizeInMB = (archive.pointer() / 1024 / 1024).toFixed(2);
-          console.log(`📦 ZIP created: ${zipFileName} (${sizeInMB} MB, ${files.length} files)`);
+          console.log(`✅ ZIP created successfully: ${zipFileName} (${sizeInMB} MB, ${files.length} files)`);
           resolve(zipPath);
+        });
+
+        // Handle archive progress
+        archive.on('progress', (progress) => {
+          if (progress.entries && progress.entries.processed % 10 === 0) {
+            console.log(`📄 Progress: ${progress.entries.processed}/${progress.entries.total} files processed`);
+          }
         });
 
         // Pipe archive to output
         archive.pipe(output);
 
         // Add files to archive with UTF-8 preservation
+        console.log(`📄 Adding ${files.length} files to archive...`);
         files.forEach((file, index) => {
           const filePath = path.join(this.outputDir, file);
+          
+          // Verify file exists before adding
+          if (!fs.existsSync(filePath)) {
+            console.warn(`⚠️ Skipping missing file: ${file}`);
+            return;
+          }
           
           // Create a safe filename that preserves UTF-8 but removes problematic characters
           let safeFileName = file;
@@ -219,86 +204,44 @@ export class WorkerService {
             console.log(`   → Safe name: "${safeFileName}"`);
           }
           
-          // Add file to archive with proper options
-          archive.file(filePath, { 
-            name: Buffer.from(safeFileName, 'utf8').toString('utf8'), // Ensure UTF-8 encoding
-            date: fs.statSync(filePath).mtime, // Use file's modification time
-            mode: 0o644 // Standard file permissions
-          });
+          try {
+            // Add file to archive with proper options
+            archive.file(filePath, { 
+              name: Buffer.from(safeFileName, 'utf8').toString('utf8'), // Ensure UTF-8 encoding
+              date: fs.statSync(filePath).mtime, // Use file's modification time
+              mode: 0o644 // Standard file permissions
+            });
+          } catch (fileError) {
+            console.error(`❌ Error adding file ${file}:`, fileError);
+            // Continue with other files instead of failing completely
+          }
         });
 
         console.log(`🗜️ Finalizing ZIP archive with ${files.length} files...`);
         
         // Finalize the archive
-        archive.finalize();
+        archive.finalize().catch((finalizeError) => {
+          console.error('❌ Error finalizing archive:', finalizeError);
+          reject(new Error(`Failed to finalize archive: ${finalizeError.message}`));
+        });
 
       } catch (error) {
-        console.error('Error creating ZIP archive:', error);
-        reject(error);
+        console.error('❌ Error creating ZIP archive:', error);
+        reject(new Error(`ZIP creation failed: ${error.message}`));
       }
     });
   }
 
   /**
-   * Alternative ZIP creation method with explicit UTF-8 handling
-   * @returns {Promise<string>} Path to created ZIP file
-   */
-  async createZipArchiveAlternative() {
-    const { execSync } = await import('child_process');
-    
-    try {
-      // Get all PDF files in output directory
-      const files = fs.readdirSync(this.outputDir)
-        .filter(file => path.extname(file).toLowerCase() === '.pdf')
-        .sort();
-
-      if (files.length === 0) {
-        throw new Error('No PDF files found to zip');
-      }
-
-      // Create unique zip filename with timestamp
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const zipFileName = `certificates_${timestamp}.zip`;
-      const zipPath = path.join(this.tempDir, zipFileName);
-
-      // Use system zip command if available (better UTF-8 support)
-      try {
-        // Change to output directory and create zip
-        const fileList = files.map(f => `"${f}"`).join(' ');
-        const command = `cd "${this.outputDir}" && zip -r "${zipPath}" ${fileList}`;
-        
-        execSync(command, { encoding: 'utf8' });
-        
-        console.log(`📦 ZIP created using system zip: ${zipFileName}`);
-        return zipPath;
-        
-      } catch (systemZipError) {
-        console.log('System zip not available, falling back to archiver method');
-        throw systemZipError;
-      }
-
-    } catch (error) {
-      console.error('Error in alternative ZIP creation:', error);
-      // Fall back to the main method
-      return this.createZipArchive();
-    }
-  }
-  /**
-   * Handle ZIP download request
+   * Handle ZIP download request with improved error handling
    * @param {Object} res - Express response object
    */
   async handleZipDownload(res) {
     try {
       console.log('🗜️ Creating ZIP archive of all certificates...');
       
-      // Try alternative method first for better UTF-8 support, fall back if needed
-      let zipPath;
-      try {
-        zipPath = await this.createZipArchiveAlternative();
-      } catch (altError) {
-        console.log('Alternative ZIP method failed, using archiver method');
-        zipPath = await this.createZipArchive();
-      }
+      // Use archiver method only (no system zip dependency)
+      const zipPath = await this.createZipArchive();
       
       const zipFileName = path.basename(zipPath);
       
@@ -311,7 +254,7 @@ export class WorkerService {
       const fileStream = fs.createReadStream(zipPath);
       
       fileStream.on('error', (error) => {
-        console.error('Error streaming ZIP:', error);
+        console.error('❌ Error streaming ZIP:', error);
         if (!res.headersSent) {
           res.status(500).json({ error: 'Error reading ZIP file' });
         }
@@ -326,7 +269,7 @@ export class WorkerService {
               console.log(`🗑️ Cleaned up temporary ZIP: ${zipFileName}`);
             }
           } catch (cleanupError) {
-            console.warn('Warning: Failed to clean up temporary ZIP:', cleanupError.message);
+            console.warn('⚠️ Warning: Failed to clean up temporary ZIP:', cleanupError.message);
           }
         }, 5000); // 5 seconds delay to ensure download completes
       });
@@ -334,7 +277,7 @@ export class WorkerService {
       fileStream.pipe(res);
       
     } catch (error) {
-      console.error('Error in handleZipDownload:', error);
+      console.error('❌ Error in handleZipDownload:', error);
       if (!res.headersSent) {
         res.status(500).json({ error: 'Failed to create ZIP: ' + error.message });
       }
@@ -342,26 +285,28 @@ export class WorkerService {
   }
 
   /**
-   * Get list of available PDF files with metadata
-   * @returns {Array} List of file objects
+   * Get list of available files
+   * @returns {Array} Array of file information objects
    */
   getAvailableFiles() {
     try {
+      if (!fs.existsSync(this.outputDir)) {
+        return [];
+      }
+
       const files = fs.readdirSync(this.outputDir)
         .filter(file => path.extname(file).toLowerCase() === '.pdf')
-        .map(fileName => {
-          const filePath = path.join(this.outputDir, fileName);
+        .map(file => {
+          const filePath = path.join(this.outputDir, file);
           const stats = fs.statSync(filePath);
-          
           return {
-            fileName,
-            size: stats.size,
-            sizeFormatted: this.formatFileSize(stats.size),
-            created: stats.birthtime,
-            modified: stats.mtime
+            name: file,
+            size: this.formatFileSize(stats.size),
+            created: stats.mtime.toISOString(),
+            path: filePath
           };
         })
-        .sort((a, b) => b.modified - a.modified); // Sort by newest first
+        .sort((a, b) => new Date(b.created) - new Date(a.created));
 
       return files;
     } catch (error) {
@@ -373,65 +318,82 @@ export class WorkerService {
   /**
    * Format file size in human readable format
    * @param {number} bytes - File size in bytes
-   * @returns {string} Formatted size string
+   * @returns {string} Formatted file size
    */
   formatFileSize(bytes) {
     if (bytes === 0) return '0 Bytes';
-    
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
   /**
-   * Clean up old temporary files
-   * @param {number} maxAgeHours - Maximum age in hours (default: 24)
+   * Clean up temporary files older than specified hours
+   * @param {number} maxAgeHours - Maximum age in hours
    */
   cleanupTempFiles(maxAgeHours = 24) {
     try {
+      if (!fs.existsSync(this.tempDir)) return;
+
+      const now = Date.now();
+      const maxAge = maxAgeHours * 60 * 60 * 1000; // Convert to milliseconds
+
       const files = fs.readdirSync(this.tempDir);
-      const cutoffTime = Date.now() - (maxAgeHours * 60 * 60 * 1000);
-      
+      let cleaned = 0;
+
       files.forEach(file => {
         const filePath = path.join(this.tempDir, file);
-        const stats = fs.statSync(filePath);
-        
-        if (stats.mtime.getTime() < cutoffTime) {
-          fs.unlinkSync(filePath);
-          console.log(`🗑️ Cleaned up old temp file: ${file}`);
+        try {
+          const stats = fs.statSync(filePath);
+          if (now - stats.mtime.getTime() > maxAge) {
+            fs.unlinkSync(filePath);
+            cleaned++;
+          }
+        } catch (error) {
+          console.warn(`Warning: Could not clean up file ${file}:`, error.message);
         }
       });
+
+      if (cleaned > 0) {
+        console.log(`🗑️ Cleaned up ${cleaned} temporary files`);
+      }
     } catch (error) {
-      console.warn('Warning: Failed to cleanup temp files:', error.message);
+      console.warn('Warning: Error during temp file cleanup:', error.message);
     }
   }
 
   /**
-   * Get statistics about certificates
+   * Get service statistics
    * @returns {Object} Statistics object
    */
   getStatistics() {
     try {
       const files = this.getAvailableFiles();
-      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-      
+      const totalSize = files.reduce((sum, file) => {
+        try {
+          const stats = fs.statSync(file.path);
+          return sum + stats.size;
+        } catch (error) {
+          return sum;
+        }
+      }, 0);
+
       return {
         totalFiles: files.length,
-        totalSize: totalSize,
-        totalSizeFormatted: this.formatFileSize(totalSize),
-        latestFile: files.length > 0 ? files[0] : null,
-        oldestFile: files.length > 0 ? files[files.length - 1] : null
+        totalSize: this.formatFileSize(totalSize),
+        outputDirectory: this.outputDir,
+        tempDirectory: this.tempDir,
+        lastGenerated: files.length > 0 ? files[0].created : null
       };
     } catch (error) {
       console.error('Error getting statistics:', error);
       return {
         totalFiles: 0,
-        totalSize: 0,
-        totalSizeFormatted: '0 Bytes',
-        latestFile: null,
-        oldestFile: null
+        totalSize: '0 Bytes',
+        outputDirectory: this.outputDir,
+        tempDirectory: this.tempDir,
+        lastGenerated: null
       };
     }
   }

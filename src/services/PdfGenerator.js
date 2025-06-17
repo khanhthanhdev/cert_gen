@@ -172,12 +172,15 @@ export class PdfGenerator {
         fontSizes.secondary,
         fonts.secondary,
         secondaryFontConfig.color
-      );
-
-      // Ensure output directory exists
+      );      // Ensure output directory exists
       const outputDir = path.resolve(this.config.outputDirectory);
       if (!existsSync(outputDir) && this.config.processingSettings.createOutputDir) {
-        mkdirSync(outputDir, { recursive: true });
+        try {
+          mkdirSync(outputDir, { recursive: true });
+        } catch (error) {
+          console.warn(`Could not create output directory ${outputDir}:`, error.message);
+          // In Vercel, directories are created automatically when files are written
+        }
       }
 
       // Generate safe filename and save
@@ -294,17 +297,23 @@ export class PdfGenerator {
           font,
           fontColor
         );
-      }
-
-      // Ensure output directory exists
+      }      // Ensure output directory exists
       const outputDir = path.resolve(this.config.config.template.outputDirectory);
+      console.log('🔍 PdfGenerator using output directory:', outputDir);
+      
       if (!existsSync(outputDir) && this.config.config.processing.createOutputDir) {
-        mkdirSync(outputDir, { recursive: true });
-      }
-
-      // Generate safe filename
+        try {
+          mkdirSync(outputDir, { recursive: true });
+          console.log('✅ Created output directory:', outputDir);
+        } catch (error) {
+          console.warn(`Could not create output directory ${outputDir}:`, error.message);
+          // In Vercel, directories are created automatically when files are written
+        }
+      }      // Generate safe filename
       const filename = this.createSafeFilename(participant);
       const outputPath = path.join(outputDir, filename);
+      
+      console.log('🔍 About to write certificate to:', outputPath);
       
       const pdfBytes = await pdfDoc.save();
       writeFileSync(outputPath, pdfBytes);
