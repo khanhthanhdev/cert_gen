@@ -1,14 +1,17 @@
 {
-  "version": 2,
-  "functions": {
-    "api/index.js": {
-      "maxDuration": 60
-    }
-  },
-  "routes": [
+  "buildCommand": "npm run build",
+  "outputDirectory": "public",
+  "framework": null,
+  "redirects": [
     {
-      "src": "/(.*)",
-      "dest": "/api"
+      "source": "/picker",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/",
+      "permanent": false
     }
   ]
 }

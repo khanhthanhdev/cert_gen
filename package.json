@@ -1,39 +1,36 @@
 {
   "name": "certificate-generator",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "type": "module",
-  "main": "api/index.js",
   "scripts": {
-    "start": "node tools/coordinateServer.js",
-    "dev": "NODE_ENV=development nodemon tools/coordinateServer.js",
-    "build": "echo 'No build step required for Vercel'",
-    "vercel-build": "echo 'Vercel build completed'",
+    "start": "node tools/serve.js",
+    "dev": "node --watch tools/serve.js",
+    "build": "node tools/build.js",
     "generate": "node index.js",
-    "validate-config": "node tools/validateConfig.js",
-    "test-coordinates": "node tools/testCoordinates.js",
-    "diagnose-positioning": "node tools/diagnosePdfPositioning.js",
-    "coordinate-picker": "node tools/coordinateServer.js",
-    "dashboard": "node tools/coordinateServer.js",
-    "unified-dashboard": "node tools/coordinateServer.js"
+    "test": "node --test tests/*.test.js",
+    "coordinate-picker": "node tools/serve.js",
+    "dashboard": "node tools/serve.js",
+    "test:browser": "playwright test",
+    "format": "prettier --write public/*.html public/*.css public/*.js public/lib/*.js tools/*.js index.js tests package.json config.json vercel.json playwright.config.js README.md VERCEL_DEPLOY.md"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "A simple certificate maker with a browser workspace and a shared PDF renderer.",
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",
-    "archiver": "^7.0.1",
-    "body-parser": "^2.2.0",
-    "cors": "^2.8.5",
-    "csv-parse": "^5.6.0",
-    "dotenv": "^16.4.5",
-    "express": "^5.1.0",
-    "fs-extra": "^11.3.0",
-    "multer": "^1.4.5-lts.2",
+    "csv-parse": "^7.0.3",
+    "express": "^5.3.0",
+    "fflate": "^0.8.3",
     "pdf-lib": "^1.17.1",
-    "xlsx": "^0.18.5"
+    "pdfjs-dist": "^6.5.438",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "engines": {
+    "node": ">=22.13.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "@playwright/test": "^1.65.1",
+    "prettier": "^3.10.1"
   }
 }

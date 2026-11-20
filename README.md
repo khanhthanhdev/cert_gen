@@ -1,302 +1,63 @@
-# 🎓 Certificate Generator v2.0 - Clean & Organized
+# Certificate Studio
 
-A modern, modular certificate generation application that creates personalized PDF certificates by merging participant data with PDF templates.
+A small certificate maker: choose a PDF, import people, position your text, and download.
 
-## 🚀 Quick Start (5 Minutes!)
+## Start
 
-### Step 1: Start the Server 🌐
+Requires Node.js 22.13 or newer (Node 24 recommended).
 
-**Important:** You need to start the server first to use the web tools:
-
-```bash
-# Start the coordinate picker server
-npm run coordinate-picker
-
-# The server will be available at http://localhost:3000
+```powershell
+npm.cmd install
+npm.cmd start
 ```
 
-📖 **Need help?** See [START_SERVER.md](START_SERVER.md) for detailed instructions.
+Open **http://localhost:3000**. On macOS/Linux, use `npm` instead of `npm.cmd`.
 
-### **Step 2: Get Your Text Coordinates 📍
+1. Use the included template or upload your own PDF.
+2. Import CSV, TSV, XLS, or XLSX data. The first row must contain column names. For Excel, choose the worksheet.
+3. Select a text field and its data column. Use the field picker above the preview, then click the page or drag the text area to position it. Arrow keys make small adjustments. Change its font, size, color, or width as needed. Long text automatically shrinks to fit.
+4. Preview any participant, then generate. Download individual PDFs or all successful certificates as a ZIP. Failed rows are listed separately.
 
-1. **Open http://localhost:3000/picker** (or click "Open Coordinate Picker" from the main dashboard)
+Use **Try sample people** to try the complete workflow without a file. Text is added to the first page; remaining pages are preserved. Export rotated templates in the correct orientation before importing.
 
-2. **Upload your PDF template** (e.g., from `assets/templates/`)
+Files are processed in the browser. They are never uploaded to a server. Layouts are remembered on this browser; participant data and generated PDFs are cleared when you refresh. **Save layout** exports your settings, and **Load layout** restores them. A custom template must be reopened after refreshing.
 
-3. **Draw lines where you want text to appear:**
-   - Draw a line for NAME placement
-   - Draw a line for POSITION placement
-   - Click "Save Configuration" to auto-update `config.json`
+## Code map
 
-### Step 3: Generate Certificates 🎯
+- `public/app.js`: workspace state, event handlers, preview, and downloads.
+- `public/lib/certificates.js`: shared PDF renderer, text fitting, unique filenames, and batch results.
+- `public/lib/data.js`: CSV parsing options, table normalization, and column mapping.
+- `tools/serve.js`: local static server. It serves only `public/`.
+- `tools/build.js`: copies installed browser libraries and runtime assets into `public/`.
+- `index.js`: optional CLI using the same renderer and data mapping as the browser.
+- `config.json`: initial template, text fields, and CLI defaults.
 
-```bash
-npm start
+There is one UI and one rendering path. No database, upload API, temporary download service, CDN, or environment configuration is needed. Generated copies in `public/vendor/`, `public/assets/`, and `public/defaults.json` are ignored by Git; edit their source files instead.
+
+## Commands
+
+```powershell
+npm.cmd run dev           # Start with Node's file watcher
+npm.cmd run build         # Build the static app into public/
+npm.cmd test             # Data and PDF regression tests
+npm.cmd run test:browser  # Full browser workflow (install Chromium first)
+npm.cmd run format        # Format maintained source files
 ```
 
-That's it! Your certificates will be in the `output/participants/` folder.
+Browser tests use Playwright Chromium. Install it once with `npx.cmd playwright install chromium`. Set `BROWSER_CHANNEL=chrome` to use installed Chrome instead.
 
-## 📁 Project Structure
+## Optional CLI
 
-```
-cert_gen/
-├── 📂 assets/           # All project assets
-│   ├── fonts/           # Font files
-│   ├── templates/       # PDF templates  
-│   └── sample-data/     # CSV data files
-├── 📂 src/              # Clean, modular source code
-│   ├── core/            # Core application logic
-│   ├── services/        # Business logic
-│   └── utils/           # Utility functions
-├── 📂 tools/            # Development tools
-├── 📂 docs/             # Documentation
-├── 📄 config.json       # Main configuration
-└── 📄 index.js          # Application entry point
+```powershell
+npm.cmd run generate
+npm.cmd run generate -- people.csv output
+npm.cmd run generate -- people.xlsx output certificate-layout.json
 ```
 
-## 🛠️ Available Commands
+The CLI uses the first worksheet for Excel. A layout saved by the browser works here too. For an uploaded custom template, add `"templatePath": "./my-template.pdf"` to the exported JSON. Default data and output paths are in `config.json`. Each run writes to a separate folder so previous certificates are preserved. Any failed row produces a nonzero exit status.
 
-```bash
-# Generate certificates
-npm start
-npm run generate
+## Deployment
 
-# Development tools  
-npm run coordinate-picker    # Visual coordinate picker
-npm run validate-config      # Validate configuration
-npm run test-coordinates     # Test coordinate placement
-npm run diagnose-positioning # Debug positioning issues
-```## ⚙️ Configuration
+Run `npm run build` and host `public/` with any static host. Vercel settings are in `vercel.json`; see [VERCEL_DEPLOY.md](VERCEL_DEPLOY.md).
 
-All settings are in `config.json`:
-
-- **Templates**: PDF files in `assets/templates/`
-- **Fonts**: Font files in `assets/fonts/`
-- **Data**: CSV files in `assets/sample-data/`
-- **Output**: Generated certificates in `output/participants/`
-
-### Execution Modes
-
-```json
-{
-  "execution": {
-    "mode": "test",  // or "csv"
-    "csvFilePath": "./assets/sample-data/data.csv"
-  }
-}
-```
-
-- **test**: Uses built-in sample data for quick testing
-- **csv**: Processes data from specified CSV file
-
-### Text Positioning
-
-```json
-{
-  "textFields": {
-    "name": {
-      "coordinates": {
-        "lineStartX": 343.5,
-        "lineEndX": 714.5,
-        "yFromTop": 294.59375,
-        "coordinateSystem": "line"
-      }
-    }
-  }
-}
-```
-
-## 🎨 Visual Tools
-
-### Line Coordinate Picker (Recommended)
-```bash
-npm run coordinate-picker
-# Open http://localhost:3000/tools/lineCoordinatePicker.html
-```
-- Draw lines on your PDF template
-- Auto-saves coordinates to config.json
-- Perfect text alignment and centering
-
-### Click Coordinate Picker
-- Open `tools/test_coordinates.html` in browser
-- Click to get exact coordinates
-- Manual config.json editing required
-
-## 🔧 Development Tools
-
-### Validate Configuration
-```bash
-npm run validate-config
-```
-
-### Test Coordinates
-```bash
-npm run test-coordinates
-```
-
-### Diagnose Positioning Issues
-```bash
-npm run diagnose-positioning
-```
-
-## 📚 Documentation
-
-- **PROJECT_STRUCTURE.md**: Detailed project organization
-- **docs/CONFIG_GUIDE.md**: Complete configuration reference
-- **docs/LINE_PICKER_GUIDE.md**: Line picker usage guide
-
-## 🔄 Migration from Legacy
-
-If upgrading from the original version:
-1. Assets moved to `assets/` directory
-2. Code reorganized into modular structure
-3. New scripts in package.json
-4. Legacy files preserved in `legacy/` folder
-
-## 💡 Features
-
-- ✅ **Clean, modular codebase**
-- ✅ **Visual coordinate picking tools**
-- ✅ **Automatic text centering and scaling**
-- ✅ **CSV data processing**
-- ✅ **UTF-8 support for international names**
-- ✅ **Configurable fonts and colors**
-- ✅ **Error handling and validation**
-- ✅ **Progress tracking**
-
-## 🤝 Contributing
-
-1. Code is organized in `src/` with clear separation
-2. Tools for development are in `tools/`
-3. Configuration is centralized in `config.json`
-4. Documentation is in `docs/`
-
-The modular structure makes it easy to:
-- Add new text fields
-- Support new coordinate systems
-- Extend with new file formats
-- Add new visual tools
-  "csvFilePath": "./data.csv"
-}
-```
-
-### Step 4: Run It! 🚀
-
-```bash
-node TTT_TNV.mjs
-```
-
-**That's it!** Your certificates will be generated in the `output/participants` folder.
-
----
-
-## 🔧 Fine-Tuning (Optional)
-
-### Font Sizes
-```json
-"fonts": {
-  "primary": { "size": 50 },    // Name font size
-  "secondary": { "size": 25 }   // Position font size
-}
-```
-
-### Colors (RGB values 0.0 to 1.0)
-```json
-"color": { "r": 0.13, "g": 0.18, "b": 0.4 }  // Dark blue
-"color": { "r": 0.0, "g": 0.0, "b": 0.0 }    // Black
-"color": { "r": 1.0, "g": 0.0, "b": 0.0 }    // Red
-```
-
-### CSV Column Mapping
-If your CSV has different columns:
-```json
-"csvMapping": {
-  "nameColumn": 1,      // Name is in column 2 (0-based indexing)
-  "positionColumn": 5   // Position is in column 6
-}
-```
-
----
-
-## 🛠️ Troubleshooting
-
-### "Text appears in wrong place"
-1. Use `test_coordinates.html` to get new coordinates
-2. Update `centerX` and `centerY` in config.json
-3. Test again with `"mode": "test"`
-
-### "Font not found"
-Check that font files exist:
-- `./MonteCarlo/MonteCarlo-Regular.ttf`
-- `./Quicksand/static/Quicksand-Bold.ttf`
-
-### "CSV not working"
-1. Check your `csvFilePath` in config.json
-2. Verify `nameColumn` and `positionColumn` numbers
-3. Make sure CSV has headers if `skipFirstRow: true`
-
----
-
-## 📁 File Structure
-
-```
-cert_gen/
-├── config.json          ⬅️ Main configuration (edit this!)
-├── TTT_TNV.mjs          ⬅️ Main generator (don't edit)
-├── test_coordinates.html ⬅️ Coordinate picker tool
-├── data.csv             ⬅️ Your participant data
-├── ttt_tnv.pdf         ⬅️ Your certificate template
-└── output/
-    └── participants/    ⬅️ Generated certificates appear here
-```
-
----
-
-## 💡 Pro Tips
-
-1. **Always test first**: Use `"mode": "test"` before processing large CSV files
-2. **Check coordinates**: Run `node testCoordinates.js` to see exactly where text will appear
-3. **Backup configs**: Save working configurations before making changes
-4. **Validate setup**: Run `node validateConfig.js` to check everything is set up correctly
-
----
-
-## 🎨 Advanced Features
-
-### Multiple Templates
-Create different config files for different certificate templates:
-```bash
-node TTT_TNV.mjs ./config-graduation.json
-node TTT_TNV.mjs ./config-participation.json
-```
-
-### Custom Test Data
-Add your own test participants in config.json:
-```json
-"testData": [
-  { "name": "John Doe", "position": "Student" },
-  { "name": "Jane Smith", "position": "Teacher" }
-]
-```
-
-### Processing Options
-```json
-"processing": {
-  "showWarnings": true,     // Show text overflow warnings
-  "showProgress": true,     // Show generation progress
-  "validateInput": true     // Validate CSV data
-}
-```
-
----
-
-## ❓ Need Help?
-
-1. **Check the console**: Error messages will guide you
-2. **Validate config**: Run `node validateConfig.js`
-3. **Test coordinates**: Use `test_coordinates.html` or `node testCoordinates.js`
-4. **Read the full guide**: See `CONFIG_GUIDE.md` for detailed explanations
-
----
-
-**Happy Certificate Generating! 🎉**
+The Excel dependency uses the maintained tarball from the [official SheetJS installation guide](https://docs.sheetjs.com/docs/getting-started/installation/nodejs/).

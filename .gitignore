@@ -91,3 +91,10 @@ jspm_packages/
 
 # Vercel
 .vercel
+# Generated browser assets and test reports
+public/vendor/
+public/assets/
+public/defaults.json
+playwright-report/
+test-results/
+tmp/
